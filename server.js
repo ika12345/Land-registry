@@ -101,9 +101,18 @@ app.put('/api/lands/:id', async (req, res) => {
       return res.status(400).json({ error: 'Invalid land ID format' });
     }
     
+    // Only allow specific fields to be updated
+    const allowedUpdates = ['coordinatesCID', 'documentCID', 'areaSqMeters', 'status', 'history'];
+    const updates = {};
+    for (const key of allowedUpdates) {
+      if (req.body[key] !== undefined) {
+        updates[key] = req.body[key];
+      }
+    }
+    
     const land = await Land.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      updates,
       { new: true, runValidators: true }
     );
     if (!land) {
