@@ -78,6 +78,11 @@ app.get('/api/lands', async (req, res) => {
 // GET /api/lands/:id - Get a single land by ID
 app.get('/api/lands/:id', async (req, res) => {
   try {
+    // Validate that the ID is a valid MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid land ID format' });
+    }
+    
     const land = await Land.findById(req.params.id);
     if (!land) {
       return res.status(404).json({ error: 'Land not found' });
@@ -91,6 +96,11 @@ app.get('/api/lands/:id', async (req, res) => {
 // PUT /api/lands/:id - Update a land
 app.put('/api/lands/:id', async (req, res) => {
   try {
+    // Validate that the ID is a valid MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid land ID format' });
+    }
+    
     const land = await Land.findByIdAndUpdate(
       req.params.id,
       req.body,
@@ -108,6 +118,11 @@ app.put('/api/lands/:id', async (req, res) => {
 // DELETE /api/lands/:id - Delete a land
 app.delete('/api/lands/:id', async (req, res) => {
   try {
+    // Validate that the ID is a valid MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid land ID format' });
+    }
+    
     const land = await Land.findByIdAndDelete(req.params.id);
     if (!land) {
       return res.status(404).json({ error: 'Land not found' });

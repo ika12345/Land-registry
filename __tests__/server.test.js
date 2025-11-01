@@ -130,6 +130,13 @@ describe('Land Management API', () => {
       expect(response.status).toBe(404);
       expect(response.body).toHaveProperty('error', 'Land not found');
     });
+
+    it('should return 400 for invalid ID format', async () => {
+      const response = await request(app).get('/api/lands/invalid-id');
+
+      expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty('error', 'Invalid land ID format');
+    });
   });
 
   describe('PUT /api/lands/:id', () => {
@@ -161,6 +168,15 @@ describe('Land Management API', () => {
       expect(response.status).toBe(404);
       expect(response.body).toHaveProperty('error', 'Land not found');
     });
+
+    it('should return 400 for invalid ID format', async () => {
+      const response = await request(app)
+        .put('/api/lands/invalid-id')
+        .send({ status: 'Approved' });
+
+      expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty('error', 'Invalid land ID format');
+    });
   });
 
   describe('DELETE /api/lands/:id', () => {
@@ -186,6 +202,13 @@ describe('Land Management API', () => {
 
       expect(response.status).toBe(404);
       expect(response.body).toHaveProperty('error', 'Land not found');
+    });
+
+    it('should return 400 for invalid ID format', async () => {
+      const response = await request(app).delete('/api/lands/invalid-id');
+
+      expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty('error', 'Invalid land ID format');
     });
   });
 });
