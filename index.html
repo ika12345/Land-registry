@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aptos Land Registry - Blockchain Land Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'aptos': '#00D4AA',
+                        'aptos-dark': '#0A0E27',
+                        'aptos-blue': '#4F46E5',
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-in-out',
+                        'slide-up': 'slideUp 0.3s ease-out',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(20px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Inter', sans-serif; }
+        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        .card-hover { transition: all 0.3s ease; }
+        .card-hover:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+        .gradient-text { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #667eea; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="min-h-screen p-4 sm:p-6 lg:p-8">
+
+    <!-- Navigation Bar -->
+    <nav class="glass rounded-2xl shadow-2xl p-4 mb-6 animate-fade-in">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-gradient-to-br from-purple-600 to-blue-600 p-3 rounded-xl">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold gradient-text">Land Registry</h1>
+                    <p class="text-sm text-gray-600">Blockchain-Powered Property Management</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <div id="network-badge" class="hidden px-4 py-2 bg-green-100 text-green-700 rounded-lg text-sm font-semibold">
+                    <span id="network-name">Testnet</span>
+                </div>
+                <button id="connect-wallet-btn" class="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold rounded-xl shadow-lg transition-all transform hover:scale-105">
+                    Connect Wallet
+                </button>
+                <div id="wallet-info" class="hidden flex items-center gap-3 bg-white px-4 py-2 rounded-xl shadow">
+                    <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <div>
+                        <p class="text-xs text-gray-500">Connected</p>
+                        <p id="wallet-address" class="text-sm font-semibold text-gray-800"></p>
+                        <p id="user-role" class="text-xs font-medium text-purple-600"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto">
+        <!-- Configuration Panel -->
+        <div class="glass rounded-2xl shadow-2xl p-6 mb-6 animate-slide-up">
+            <div class="flex items-center gap-3 mb-4">
+                <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+                <h2 class="text-xl font-bold text-gray-800">Contract Configuration</h2>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-gray-50 p-4 rounded-xl">
+                    <p class="text-xs text-gray-500 mb-1">Module Address</p>
+                    <p id="module-address" class="text-sm font-mono text-gray-800 break-all">0x9be54afa644bde0f34ec4284268ea050f8432e6ad17c65548610a01d612da398</p>
+                </div>
+                <div class="bg-gray-50 p-4 rounded-xl">
+                    <p class="text-xs text-gray-500 mb-1">Network</p>
+                    <p class="text-sm font-semibold text-gray-800">Aptos Testnet</p>
+                    <a href="https://explorer.aptoslabs.com/?network=testnet" target="_blank" class="text-xs text-purple-600 hover:underline">View on Explorer →</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="glass rounded-2xl shadow-2xl p-2 mb-6 animate-slide-up">
+            <div class="flex flex-wrap gap-2">
+                <button class="tab-btn active px-6 py-3 rounded-xl font-semibold transition-all" data-tab="operations">
+                    🏛 Operations
+                </button>
+                <button class="tab-btn px-6 py-3 rounded-xl font-semibold transition-all" data-tab="explorer">
+                    🔍 Land Explorer
+                </button>
+                <button class="tab-btn px-6 py-3 rounded-xl font-semibold transition-all" data-tab="admin">
+                    👤 Admin Panel
+                </button>
+                <button class="tab-btn px-6 py-3 rounded-xl font-semibold transition-all" data-tab="history">
+                    📜 My Lands
+                </button>
+            </div>
+        </div>
+
+        <!-- Operations Tab -->
+        <div id="tab-operations" class="tab-content">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                <!-- Register Land -->
+                <div class="glass rounded-2xl shadow-2xl p-6 card-hover animate-slide-up">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="bg-green-100 p-3 rounded-xl">
+                            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-800">Register Land</h3>
+                            <p class="text-xs text-gray-500">Patwari Only</p>
+                        </div>
+                    </div>
+                    <div class="space-y-3">
+                        <input type="text" id="reg-owner" placeholder="Owner Wallet Address (0x...)" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all">
+                        <input type="text" id="reg-coords" placeholder="Coordinates CID (IPFS Hash)" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all">
+                        <input type="text" id="reg-doc" placeholder="Document CID (IPFS Hash)" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all">
+                        <input type="number" id="reg-area" placeholder="Area (sq meters)" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all">
+                        <button id="register-btn" class="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                            Register Land Parcel
+                        </button>
+                        <div id="register-result" class="p-3 bg-gray-50 rounded-xl text-sm font-mono text-gray-600 min-h-[60px]">
+                            Awaiting transaction...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Approve Land -->
+                <div class="glass rounded-2xl shadow-2xl p-6 card-hover animate-slide-up">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="bg-blue-100 p-3 rounded-xl">
+                            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-800">Approve Land</h3>
+                            <p class="text-xs text-gray-500">Tehsildar Only</p>
+                        </div>
+                    </div>
+                    <div class="space-y-3">
+                        <input type="number" id="approve-id" placeholder="Land ID" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all">
+                        <button id="approve-btn" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                            Approve Land Registration
+                        </button>
+                        <div id="approve-result" class="p-3 bg-gray-50 rounded-xl text-sm font-mono text-gray-600 min-h-[60px]">
+                            Awaiting transaction...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Finalize Land -->
+                <div class="glass rounded-2xl shadow-2xl p-6 card-hover animate-slide-up">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="bg-purple-100 p-3 rounded-xl">
+                            <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-800">Finalize Land</h3>
+                            <p class="text-xs text-gray-500">DLR Only</p>
+                        </div>
+                    </div>
+                    <div class="space-y-3">
+                        <input type="number" id="finalize-id" placeholder="Land ID" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all">
+                        <button id="finalize-btn" class="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                            Finalize Land Record
+                        </button>
+                        <div id="finalize-result" class="p-3 bg-gray-50 rounded-xl text-sm font-mono text-gray-600 min-h-[60px]">
+                            Awaiting transaction...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transfer Land -->
+                <div class="glass rounded-2xl shadow-2xl p-6 card-hover animate-slide-up">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="bg-yellow-100 p-3 rounded-xl">
+                            <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-800">Transfer Ownership</h3>
+                            <p class="text-xs text-gray-500">Owner Only</p>
+                        </div>
+                    </div>
+                    <div class="space-y-3">
+                        <input type="number" id="transfer-id" placeholder="Land ID" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all">
+                        <input type="text" id="transfer-new-owner" placeholder="New Owner Address (0x...)" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all">
+                        <button id="transfer-btn" class="w-full py-3 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold rounded-xl transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                            Transfer Land Ownership
+                        </button>
+                        <div id="transfer-result" class="p-3 bg-gray-50 rounded-xl text-sm font-mono text-gray-600 min-h-[60px]">
+                            Awaiting transaction...
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Explorer Tab -->
+        <div id="tab-explorer" class="tab-content hidden">
+            <div class="glass rounded-2xl shadow-2xl p-6 animate-slide-up">
+                <h3 class="text-2xl font-bold text-gray-800 mb-6">🔍 Land Details Explorer</h3>
+                <div class="flex gap-3 mb-6">
+                    <input type="number" id="explorer-id" placeholder="Enter Land ID" class="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all">
+                    <button id="explorer-btn" class="px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold rounded-xl transition-all disabled:opacity-50" disabled>
+                        Search
+                    </button>
+                </div>
+                <div id="explorer-result" class="bg-gray-50 rounded-xl p-6 min-h-[300px]">
+                    <p class="text-gray-500 text-center">Enter a Land ID and click Search to view details</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Panel Tab -->
+        <div id="tab-admin" class="tab-content hidden">
+            <div class="glass rounded-2xl shadow-2xl p-6 animate-slide-up">
+                <h3 class="text-2xl font-bold text-gray-800 mb-6">👤 Role Management (DLR Only)</h3>
+                <div class="space-y-4">
+                    <input type="text" id="admin-address" placeholder="Official Address (0x...)" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all">
+                    <select id="admin-role" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all">
+                        <option value="1">Patwari (Field Officer)</option>
+                        <option value="2">Tehsildar (Approval Authority)</option>
+                        <option value="3">DLR (District Land Registrar)</option>
+                    </select>
+                    <button id="admin-assign-btn" class="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        Assign Role
+                    </button>
+                    <div id="admin-result" class="p-3 bg-gray-50 rounded-xl text-sm font-mono text-gray-600 min-h-[60px]">
+                        Awaiting transaction...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- My Lands Tab -->
+        <div id="tab-history" class="tab-content hidden">
+            <div class="glass rounded-2xl shadow-2xl p-6 animate-slide-up">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-2xl font-bold text-gray-800">📜 My Land Records</h3>
+                    <button id="refresh-lands-btn" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition-all disabled:opacity-50" disabled>
+                        Refresh
+                    </button>
+                </div>
+                <div id="my-lands-list" class="space-y-4 min-h-[300px]">
+                    <p class="text-gray-500 text-center">Connect wallet to view your land records</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-6 right-6 px-6 py-4 rounded-xl shadow-2xl text-white font-semibold hidden z-50 transform transition-all">
+        <span id="toast-message"></span>
+    </div>
+
+    <script type="module">
+        import { AptosClient } from 'https://esm.sh/aptos@1.17.0';
+
+        // Configuration
+        const MODULE_ADDRESS = document.getElementById('module-address').textContent;
+        const MODULE_NAME = 'landregistry';
+        const FULL_MODULE = ${MODULE_ADDRESS}::${MODULE_NAME};
+        const TESTNET_URL = 'https://fullnode.testnet.aptoslabs.com/v1';
+
+        const ROLE_MAP = { 0: 'None', 1: 'Patwari', 2: 'Tehsildar', 3: 'DLR' };
+        const STATUS_MAP = { 1: 'Provisional', 2: 'Approved', 3: 'Finalized', 99: 'Disputed' };
+
+        // Global State
+        let client = new AptosClient(TESTNET_URL);
+        let wallet = null;
+        let userRole = 0;
+
+        // Utility Functions
+        function toast(msg, isError = false) {
+            const el = document.getElementById('toast');
+            const msgEl = document.getElementById('toast-message');
+            msgEl.textContent = msg;
+            el.className = fixed bottom-6 right-6 px-6 py-4 rounded-xl shadow-2xl text-white font-semibold z-50 transform transition-all ${isError ? 'bg-red-500' : 'bg-green-500'};
+            setTimeout(() => el.classList.add('hidden'), 4000);
+        }
+
+        function isValidAddr(addr) {
+            return /^0x[0-9a-fA-F]{64}$/.test(addr);
+        }
+
+        async function getRole(addr) {
+            try {
+                const res = await client.view({
+                    function: ${FULL_MODULE}::get_user_role,
+                    type_arguments: [],
+                    arguments: [addr],
+                });
+                return parseInt(res[0], 10);
+            } catch {
+                return 0;
+            }
+        }
+
+        function updateButtons() {
+            const connected = wallet !== null;
+            document.getElementById('register-btn').disabled = !(connected && userRole >= 1);
+            document.getElementById('approve-btn').disabled = !(connected && userRole >= 2);
+            document.getElementById('finalize-btn').disabled = !(connected && userRole >= 3);
+            document.getElementById('transfer-btn').disabled = !connected;
+            document.getElementById('admin-assign-btn').disabled = !(connected && userRole >= 3);
+            document.getElementById('explorer-btn').disabled = !connected;
+            document.getElementById('refresh-lands-btn').disabled = !connected;
+        }
+
+        async function txn(fn, args, resultDiv, btn) {
+            if (!window.aptos || !wallet) {
+                toast("Connect wallet first", true);
+                return;
+            }
+
+            resultDiv.innerHTML = '<div class="flex items-center gap-2"><div class="loader"></div> Submitting...</div>';
+            btn.disabled = true;
+
+            try {
+                const tx = {
+                    type: "entry_function_payload",
+                    function: ${FULL_MODULE}::${fn},
+                    type_arguments: [],
+                    arguments: args,
+                };
+
+                const pending = await window.aptos.signAndSubmitTransaction(tx);
+                resultDiv.innerHTML = <div class="flex items-center gap-2"><div class="loader"></div> Confirming: ${pending.hash.substring(0, 12)}...</div>;
+                toast("Transaction submitted!");
+
+                const confirmed = await client.waitForTransactionWithResult(pending.hash);
+                
+                if (confirmed.success) {
+                    resultDiv.innerHTML = <span class="text-green-600 font-bold">✓ SUCCESS</span><br><a href="https://explorer.aptoslabs.com/txn/${pending.hash}?network=testnet" target="_blank" class="text-purple-600 hover:underline">${pending.hash.substring(0, 16)}... →</a>;
+                    toast("Transaction confirmed!");
+                } else {
+                    resultDiv.textContent = Failed: ${confirmed.vm_status};
+                    toast("Transaction failed", true);
+                }
+            } catch (err) {
+                console.error(err);
+                resultDiv.textContent = Error: ${err.message || err.toString()};
+                toast("Transaction failed", true);
+            } finally {
+                btn.disabled = false;
+                updateButtons();
+            }
+        }
+
+        // Tab System
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tab = btn.dataset.tab;
+                document.querySelectorAll('.tab-btn').forEach(b => {
+                    b.classList.remove('active', 'bg-purple-600', 'text-white');
+                    b.classList.add('text-gray-600', 'hover:bg-gray-100');
+                });
+                btn.classList.add('active', 'bg-purple-600', 'text-white');
+                btn.classList.remove('text-gray-600', 'hover:bg-gray-100');
+                
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+                document.getElementById(tab-${tab}).classList.remove('hidden');
+            });
+        });
+
+        // Connect Wallet
+        document.getElementById('connect-wallet-btn').addEventListener('click', async () => {
+            if (!window.aptos) {
+                toast("Install Petra/Martian wallet!", true);
+                return;
+            }
+
+            try {
+                const res = await window.aptos.connect();
+                wallet = res.address;
+                userRole = await getRole(wallet);
+
+                document.getElementById('connect-wallet-btn').classList.add('hidden');
+                document.getElementById('wallet-info').classList.remove('hidden');
+                document.getElementById('network-badge').classList.remove('hidden');
+                document.getElementById('wallet-address').textContent = ${wallet.substring(0, 6)}...${wallet.slice(-4)};
+                document.getElementById('user-role').textContent = Role: ${ROLE_MAP[userRole]};
+
+                const net = await window.aptos.network();
+                document.getElementById('network-name').textContent = net.name || 'Testnet';
+
+                updateButtons();
+                toast(Connected as ${ROLE_MAP[userRole]});
+            } catch (err) {
+                console.error(err);
+                toast("Connection failed", true);
+            }
+        });
+
+        // Register Land
+        document.getElementById('register-btn').addEventListener('click', async () => {
+            const owner = document.getElementById('reg-owner').value.trim();
+            const coords = document.getElementById('reg-coords').value.trim();
+            const doc = document.getElementById('reg-doc').value.trim();
+            const area = document.getElementById('reg-area').value.trim();
+
+            if (!isValidAddr(owner)) return toast("Invalid owner address", true);
+            if (!coords || !doc || !area) return toast("Fill all fields", true);
+
+            await txn('register_land', [owner, coords, doc, area], 
+                document.getElementById('register-result'), 
+                document.getElementById('register-btn'));
+        });
+
+        // Approve Land
+        document.getElementById('approve-btn').addEventListener('click', async () => {
+            const id = document.getElementById('approve-id').value.trim();
+            if (!id || id <= 0) return toast("Invalid Land ID", true);
+
+            await txn('approve_land', [id], 
+                document.getElementById('approve-result'), 
+                document.getElementById('approve-btn'));
+        });
+
+        // Finalize Land
+        document.getElementById('finalize-btn').addEventListener('click', async () => {
+            const id = document.getElementById('finalize-id').value.trim();
+            if (!id || id <= 0) return toast("Invalid Land ID", true);
+
+            await txn('finalize_land', [id], 
+                document.getElementById('finalize-result'), 
+                document.getElementById('finalize-btn'));
+        });
+
+        // Transfer Land
+        document.getElementById('transfer-btn').addEventListener('click', async () => {
+            const id = document.getElementById('transfer-id').value.trim();
+            const newOwner = document.getElementById('transfer-new-owner').value.trim();
+
+            if (!id || id <= 0) return toast("Invalid Land ID", true);
+            if (!isValidAddr(newOwner)) return toast("Invalid new owner address", true);
+
+            await txn('transfer_land', [id, newOwner], 
+                document.getElementById('transfer-result'), 
+                document.getElementById('transfer-btn'));
+        });
+
+        // Assign Role
+        document.getElementById('admin-assign-btn').addEventListener('click', async () => {
+            const addr = document.getElementById('admin-address').value.trim();
+            const role = document.getElementById('admin-role').value;
+
+            if (!isValidAddr(addr)) return toast("Invalid address", true);
+
+            await txn('assign_role', [addr, role], 
+                document.getElementById('admin-result'), 
+                document.getElementById('admin-assign-btn'));
+        });
+
+        // Land Explorer
+        document.getElementById('explorer-btn').addEventListener('click', async () => {
+            const id = document.getElementById('explorer-id').value.trim();
+            if (!id || id <= 0) return toast("Invalid Land ID", true);
+
+            const resultDiv = document.getElementById('explorer-result');
+            resultDiv.innerHTML = '<div class="flex items-center justify-center py-12"><div class="loader"></div></div>';
+
+            try {
+                const res = await client.view({
+                    function: ${FULL_MODULE}::get_land_details,
+                    type_arguments: [],
+                    arguments: [id],
+                });
+
+                const land = res[0];
+                const statusColor = {1: 'yellow', 2: 'blue', 3: 'green', 99: 'red'}[land.status] || 'gray';
+                
+                resultDiv.innerHTML = `
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="space-y-3">
+                            <div class="bg-white p-4 rounded-xl border-2 border-gray-100">
+                                <p class="text-xs text-gray-500 mb-1">Land ID</p>
+                                <p class="text-2xl font-bold text-purple-600">#${land.land_id}</p>
+                            </div>
+                            <div class="bg-white p-4 rounded-xl border-2 border-gray-100">
+                                <p class="text-xs text-gray-500 mb-1">Owner Address</p>
+                                <p class="text-sm font-mono break-all">${land.owner_wallet}</p>
+                            </div>
+                            <div class="bg-white p-4 rounded-xl border-2 border-gray-100">
+                                <p class="text-xs text-gray-500 mb-1">Area</p>
+                                <p class="text-lg font-bold">${land.area_sq_meters.toLocaleString()} m²</p>
+                            </div>
+                            <div class="bg-white p-4 rounded-xl border-2 border-${statusColor}-200">
+                                <p class="text-xs text-gray-500 mb-1">Status</p>
+                                <p class="text-lg font-bold text-${statusColor}-600">${STATUS_MAP[land.status] || 'Unknown'}</p>
+                            </div>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="bg-white p-4 rounded-xl border-2 border-gray-100">
+                                <p class="text-xs text-gray-500 mb-1">Coordinates (IPFS)</p>
+                                <a href="https://ipfs.io/ipfs/${land.coordinates_cid}" target="_blank" class="text-sm text-purple-600 hover:underline break-all">${land.coordinates_cid}</a>
+                            </div>
+                            <div class="bg-white p-4 rounded-xl border-2 border-gray-100">
+                                <p class="text-xs text-gray-500 mb-1">Documents (IPFS)</p>
+                                <a href="https://ipfs.io/ipfs/${land.document_cid}" target="_blank" class="text-sm text-purple-600 hover:underline break-all">${land.document_cid}</a>
+                            </div>
+                            <div class="bg-white p-4 rounded-xl border-2 border-gray-100">
+                                <p class="text-xs text-gray-500 mb-1">Last Verified By</p>
+                                <p class="text-sm font-mono break-all">${land.last_verified_by}</p>
+                            </div>
+                            <div class="bg-white p-4 rounded-xl border-2 border-gray-100">
+                                <p class="text-xs text-gray-500 mb-1">Last Updated</p>
+                                <p class="text-sm">${new Date(land.last_updated_timestamp * 1000).toLocaleString()}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                toast(Land #${id} details loaded);
+            } catch (err) {
+                console.error(err);
+                resultDiv.innerHTML = <p class="text-red-600 text-center py-12">Land not found or error: ${err.message}</p>;
+                toast("Failed to fetch land details", true);
+            }
+        });
+
+        // My Lands
+        document.getElementById('refresh-lands-btn').addEventListener('click', async () => {
+            if (!wallet) return toast("Connect wallet first", true);
+
+            const listDiv = document.getElementById('my-lands-list');
+            listDiv.innerHTML = '<div class="flex items-center justify-center py-12"><div class="loader"></div></div>';
+
+            try {
+                // Query lands where user is owner - we'll check IDs 1-50
+                const lands = [];
+                for (let i = 1; i <= 50; i++) {
+                    try {
+                        const res = await client.view({
+                            function: ${FULL_MODULE}::get_land_details,
+                            type_arguments: [],
+                            arguments: [i.toString()],
+                        });
+                        if (res[0].owner_wallet === wallet) {
+                            lands.push(res[0]);
+                        }
+                    } catch {
+                        // Land doesn't exist, skip
+                    }
+                }
+
+                if (lands.length === 0) {
+                    listDiv.innerHTML = '<p class="text-gray-500 text-center py-12">No land records found for your wallet</p>';
+                } else {
+                    listDiv.innerHTML = lands.map(land => {
+                        const statusColor = {1: 'yellow', 2: 'blue', 3: 'green', 99: 'red'}[land.status] || 'gray';
+                        return `
+                            <div class="bg-white p-4 rounded-xl border-2 border-gray-100 hover:border-purple-300 transition-all">
+                                <div class="flex justify-between items-start mb-3">
+                                    <div>
+                                        <p class="text-lg font-bold text-purple-600">Land #${land.land_id}</p>
+                                        <p class="text-sm text-gray-500">${land.area_sq_meters.toLocaleString()} m²</p>
+                                    </div>
+                                    <span class="px-3 py-1 bg-${statusColor}-100 text-${statusColor}-700 rounded-lg text-sm font-semibold">
+                                        ${STATUS_MAP[land.status]}
+                                    </span>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2 text-xs">
+                                    <div>
+                                        <p class="text-gray-500">Coordinates</p>
+                                        <p class="font-mono truncate">${land.coordinates_cid}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-gray-500">Last Updated</p>
+                                        <p>${new Date(land.last_updated_timestamp * 1000).toLocaleDateString()}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                    toast(Found ${lands.length} land record(s));
+                }
+            } catch (err) {
+                console.error(err);
+                listDiv.innerHTML = '<p class="text-red-600 text-center py-12">Error loading lands</p>';
+                toast("Failed to load lands", true);
+            }
+        });
+
+        // Auto-connect on load
+        (async () => {
+            if (window.aptos && window.aptos.isConnected) {
+                try {
+                    const acc = await window.aptos.account();
+                    wallet = acc.address;
+                    userRole = await getRole(wallet);
+
+                    document.getElementById('connect-wallet-btn').classList.add('hidden');
+                    document.getElementById('wallet-info').classList.remove('hidden');
+                    document.getElementById('network-badge').classList.remove('hidden');
+                    document.getElementById('wallet-address').textContent = ${wallet.substring(0, 6)}...${wallet.slice(-4)};
+                    document.getElementById('user-role').textContent = Role: ${ROLE_MAP[userRole]};
+
+                    updateButtons();
+                } catch (e) {
+                    console.error("Auto-connect failed:", e);
+                }
+            }
+        })();
+
+        // Initialize tab buttons styling
+        document.querySelector('.tab-btn.active').classList.add('bg-purple-600', 'text-white');
+        document.querySelectorAll('.tab-btn:not(.active)').forEach(btn => {
+            btn.classList.add('text-gray-600', 'hover:bg-gray-100');
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aptos Land Registry Interface</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'aptos-blue': '#61e9ff',
+                        'aptos-dark': '#1e293b',
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-4 sm:p-8">
+
+    <div class="max-w-7xl mx-auto bg-white shadow-xl rounded-2xl p-6 sm:p-10">
+        <header class="text-center mb-10">
+            <h1 class="text-4xl font-extrabold text-gray-800">🏛️ Aptos Land Registry DApp</h1>
+            <p class="text-md text-gray-500 mt-2">Interact with the deployed contract on <strong class="text-green-600">Testnet</strong></p>
+            <p class="text-lg text-red-600 font-bold mt-1">⚠️ Ensure your wallet is set to Aptos Testnet</p>
+        </header>
+
+        <!-- Configuration -->
+        <div class="bg-aptos-dark text-white p-4 rounded-xl mb-6">
+            <p class="text-sm font-mono break-all">
+                <strong>Module Address:</strong> <span id="module-address">0x9be54afa644bde0f34ec4284268ea050f8432e6ad17c65548610a01d612da398</span>
+            </p>
+            <p class="text-sm font-mono"><strong>Network:</strong> Testnet</p>
+        </div>
+
+        <!-- Wallet Connection -->
+        <div class="mb-10 text-center">
+            <button id="connect-button" 
+                    class="px-8 py-3 bg-aptos-blue hover:bg-aptos-blue/80 text-gray-900 font-bold rounded-xl transition shadow-md">
+                Connect Wallet
+            </button>
+            <div id="account-info" class="mt-4 text-lg text-gray-700 font-semibold hidden">
+                <p>Connected: <span id="wallet-address-display"></span></p>
+                <p>Role: <span id="user-role-display" class="text-red-500">None</span></p>
+                <p id="wallet-network-display" class="text-sm font-medium mt-1"></p>
+            </div>
+        </div>
+
+        <!-- Operations Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            
+            <!-- 1. Register Land (Patwari) -->
+            <div class="bg-green-50 p-6 rounded-xl border-2 border-green-200">
+                <h2 class="text-xl font-semibold mb-4 text-gray-800">📝 Register Land (Patwari)</h2>
+                <input type="text" id="owner-wallet" class="w-full border rounded-lg p-2 mb-3" placeholder="Owner Wallet Address (0x...)">
+                <input type="text" id="coordinates-cid" class="w-full border rounded-lg p-2 mb-3" placeholder="Coordinates CID (IPFS hash)">
+                <input type="text" id="document-cid" class="w-full border rounded-lg p-2 mb-3" placeholder="Document CID (IPFS hash)">
+                <input type="number" id="area-sqm" class="w-full border rounded-lg p-2 mb-3" placeholder="Area (square meters)">
+                <button id="register-button" class="w-full py-2 bg-green-600 hover:bg-green-500 text-white font-semibold rounded-lg" disabled>
+                    Register Land
+                </button>
+                <div id="register-result" class="mt-4 p-2 bg-white border rounded-lg text-xs font-mono break-all min-h-[3rem]">
+                    Result will appear here...
+                </div>
+            </div>
+
+            <!-- 2. Approve Land (Tehsildar) -->
+            <div class="bg-blue-50 p-6 rounded-xl border-2 border-blue-200">
+                <h2 class="text-xl font-semibold mb-4 text-gray-800">✅ Approve Land (Tehsildar)</h2>
+                <input type="number" id="approve-land-id" class="w-full border rounded-lg p-2 mb-3" placeholder="Land ID" min="1">
+                <button id="approve-button" class="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg" disabled>
+                    Approve Land
+                </button>
+                <div id="approve-result" class="mt-4 p-2 bg-white border rounded-lg text-xs font-mono break-all min-h-[3rem]">
+                    Result will appear here...
+                </div>
+            </div>
+
+            <!-- 3. Finalize Land (DLR) -->
+            <div class="bg-purple-50 p-6 rounded-xl border-2 border-purple-200">
+                <h2 class="text-xl font-semibold mb-4 text-gray-800">🎯 Finalize Land (DLR)</h2>
+                <input type="number" id="finalize-land-id" class="w-full border rounded-lg p-2 mb-3" placeholder="Land ID" min="1">
+                <button id="finalize-button" class="w-full py-2 bg-purple-600 hover:bg-purple-500 text-white font-semibold rounded-lg" disabled>
+                    Finalize Land
+                </button>
+                <div id="finalize-result" class="mt-4 p-2 bg-white border rounded-lg text-xs font-mono break-all min-h-[3rem]">
+                    Result will appear here...
+                </div>
+            </div>
+
+            <!-- 4. Transfer Land (Owner) -->
+            <div class="bg-yellow-50 p-6 rounded-xl border-2 border-yellow-200">
+                <h2 class="text-xl font-semibold mb-4 text-gray-800">🔄 Transfer Land (Owner)</h2>
+                <input type="number" id="transfer-land-id" class="w-full border rounded-lg p-2 mb-3" placeholder="Land ID" min="1">
+                <input type="text" id="new-owner" class="w-full border rounded-lg p-2 mb-3" placeholder="New Owner Address (0x...)">
+                <button id="transfer-button" class="w-full py-2 bg-yellow-600 hover:bg-yellow-500 text-white font-semibold rounded-lg" disabled>
+                    Transfer Ownership
+                </button>
+                <div id="transfer-result" class="mt-4 p-2 bg-white border rounded-lg text-xs font-mono break-all min-h-[3rem]">
+                    Result will appear here...
+                </div>
+            </div>
+
+            <!-- 5. Assign Role (DLR Admin) -->
+            <div class="bg-red-50 p-6 rounded-xl border-2 border-red-200">
+                <h2 class="text-xl font-semibold mb-4 text-gray-800">👤 Assign Role (DLR)</h2>
+                <input type="text" id="role-address" class="w-full border rounded-lg p-2 mb-3" placeholder="Official Address (0x...)">
+                <select id="role-select" class="w-full border rounded-lg p-2 mb-3">
+                    <option value="1">Patwari (1)</option>
+                    <option value="2">Tehsildar (2)</option>
+                    <option value="3">DLR (3)</option>
+                </select>
+                <button id="assign-role-button" class="w-full py-2 bg-red-600 hover:bg-red-500 text-white font-semibold rounded-lg" disabled>
+                    Assign Role
+                </button>
+                <div id="role-result" class="mt-4 p-2 bg-white border rounded-lg text-xs font-mono break-all min-h-[3rem]">
+                    Result will appear here...
+                </div>
+            </div>
+
+            <!-- 6. View Land Details -->
+            <div class="bg-gray-50 p-6 rounded-xl border-2 border-gray-200">
+                <h2 class="text-xl font-semibold mb-4 text-gray-800">🔍 View Land Details</h2>
+                <input type="number" id="view-land-id" class="w-full border rounded-lg p-2 mb-3" placeholder="Land ID" min="1">
+                <button id="view-button" class="w-full py-2 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-lg" disabled>
+                    Get Details
+                </button>
+                <div id="view-result" class="mt-4 p-3 bg-white border rounded-lg text-xs font-mono break-all min-h-[8rem] overflow-auto">
+                    Data will appear here...
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Status Messages -->
+        <div id="status-message" class="fixed bottom-4 right-4 p-4 rounded-lg shadow-lg text-white font-semibold hidden z-50"></div>
+    </div>
+
+    <script type="module">
+        import { AptosClient } from 'https://esm.sh/aptos@1.17.0';
+
+        // Constants
+        const MODULE_ADDRESS = document.getElementById('module-address').textContent;
+        const MODULE_NAME = 'landregistry';
+        const FULL_MODULE_ID = `${MODULE_ADDRESS}::${MODULE_NAME}`;
+        const TESTNET_URL = 'https://fullnode.testnet.aptoslabs.com/v1';
+
+        const ROLE_MAP = {
+            0: 'None',
+            1: 'Patwari',
+            2: 'Tehsildar',
+            3: 'DLR (Admin)',
+        };
+
+        const STATUS_MAP = {
+            1: 'Provisional',
+            2: 'Approved',
+            3: 'Finalized',
+            99: 'Disputed'
+        };
+
+        // Global state
+        let aptosClient = new AptosClient(TESTNET_URL);
+        let walletAddress = null;
+        let userRole = 0;
+
+        // Utility functions
+        function showStatus(message, isError = false) {
+            const statusEl = document.getElementById('status-message');
+            statusEl.textContent = message;
+            statusEl.className = `fixed bottom-4 right-4 p-4 rounded-lg shadow-lg text-white font-semibold ${isError ? 'bg-red-600' : 'bg-green-600'} z-50`;
+            setTimeout(() => statusEl.classList.add('hidden'), 5000);
+        }
+
+        function isValidAddress(addr) {
+            return /^0x[0-9a-fA-F]{64}$/.test(addr);
+        }
+
+        async function getUserRole(addr) {
+            try {
+                const response = await aptosClient.view({
+                    function: `${FULL_MODULE_ID}::get_user_role`,
+                    type_arguments: [],
+                    arguments: [addr],
+                });
+                return parseInt(response[0], 10);
+            } catch (error) {
+                console.warn("Failed to fetch user role:", error);
+                return 0;
+            }
+        }
+
+        function updateButtonStates() {
+            const isConnected = walletAddress !== null;
+            
+            document.getElementById('view-button').disabled = !isConnected;
+            document.getElementById('register-button').disabled = !(isConnected && userRole >= 1);
+            document.getElementById('approve-button').disabled = !(isConnected && userRole >= 2);
+            document.getElementById('finalize-button').disabled = !(isConnected && userRole >= 3);
+            document.getElementById('transfer-button').disabled = !isConnected;
+            document.getElementById('assign-role-button').disabled = !(isConnected && userRole >= 3);
+        }
+
+        async function submitTransaction(functionName, args, resultDiv, button) {
+            if (!window.aptos || !walletAddress) {
+                showStatus("Please connect your wallet first.", true);
+                return;
+            }
+
+            resultDiv.textContent = 'Submitting transaction...';
+            button.disabled = true;
+
+            try {
+                const transaction = {
+                    type: "entry_function_payload",
+                    function: `${FULL_MODULE_ID}::${functionName}`,
+                    type_arguments: [],
+                    arguments: args,
+                };
+
+                const pendingTx = await window.aptos.signAndSubmitTransaction(transaction);
+                resultDiv.textContent = `Waiting for confirmation: ${pendingTx.hash}`;
+                showStatus("Transaction submitted!");
+
+                const confirmedTx = await aptosClient.waitForTransactionWithResult(pendingTx.hash);
+                
+                if (confirmedTx.success) {
+                    resultDiv.innerHTML = `<span class="text-green-600 font-bold">SUCCESS!</span><br>Hash: <a href="https://explorer.aptoslabs.com/txn/${pendingTx.hash}?network=testnet" target="_blank" class="text-blue-600 hover:underline">${pendingTx.hash.substring(0, 16)}...</a>`;
+                    showStatus("Transaction confirmed!");
+                } else {
+                    resultDiv.textContent = `Failed: ${confirmedTx.vm_status}`;
+                    showStatus("Transaction failed.", true);
+                }
+            } catch (error) {
+                console.error("Transaction error:", error);
+                resultDiv.textContent = `Error: ${error.message || error.toString()}`;
+                showStatus("Transaction failed.", true);
+            } finally {
+                button.disabled = false;
+                updateButtonStates();
+            }
+        }
+
+        // Event Handlers
+        document.getElementById('connect-button').addEventListener('click', async () => {
+            if (!window.aptos) {
+                showStatus("Please install Petra or Martian wallet!", true);
+                return;
+            }
+
+            try {
+                const response = await window.aptos.connect();
+                walletAddress = response.address;
+                userRole = await getUserRole(walletAddress);
+
+                document.getElementById('connect-button').classList.add('hidden');
+                document.getElementById('account-info').classList.remove('hidden');
+                document.getElementById('wallet-address-display').textContent = `${walletAddress.substring(0, 8)}...${walletAddress.slice(-6)}`;
+                document.getElementById('user-role-display').textContent = ROLE_MAP[userRole];
+                document.getElementById('user-role-display').className = userRole > 0 ? 'text-green-600' : 'text-red-500';
+                
+                const network = await window.aptos.network();
+                document.getElementById('wallet-network-display').textContent = `Network: ${network.name || 'Testnet'}`;
+                document.getElementById('wallet-network-display').className = network.name?.toLowerCase() === 'testnet' ? 'text-green-600 text-sm' : 'text-red-600 text-sm';
+
+                updateButtonStates();
+                showStatus(`Connected! Role: ${ROLE_MAP[userRole]}`);
+            } catch (error) {
+                console.error("Connection error:", error);
+                showStatus("Connection failed.", true);
+            }
+        });
+
+        document.getElementById('register-button').addEventListener('click', async () => {
+            const ownerWallet = document.getElementById('owner-wallet').value.trim();
+            const coordinatesCid = document.getElementById('coordinates-cid').value.trim();
+            const documentCid = document.getElementById('document-cid').value.trim();
+            const areaSqm = document.getElementById('area-sqm').value.trim();
+
+            if (!ownerWallet || !isValidAddress(ownerWallet)) {
+                showStatus("Invalid owner wallet address!", true);
+                return;
+            }
+            if (!coordinatesCid || !documentCid || !areaSqm) {
+                showStatus("Please fill all fields!", true);
+                return;
+            }
+
+            await submitTransaction(
+                'register_land',
+                [ownerWallet, coordinatesCid, documentCid, areaSqm],
+                document.getElementById('register-result'),
+                document.getElementById('register-button')
+            );
+        });
+
+        document.getElementById('approve-button').addEventListener('click', async () => {
+            const landId = document.getElementById('approve-land-id').value.trim();
+            if (!landId || landId <= 0) {
+                showStatus("Invalid Land ID!", true);
+                return;
+            }
+
+            await submitTransaction(
+                'approve_land',
+                [landId],
+                document.getElementById('approve-result'),
+                document.getElementById('approve-button')
+            );
+        });
+
+        document.getElementById('finalize-button').addEventListener('click', async () => {
+            const landId = document.getElementById('finalize-land-id').value.trim();
+            if (!landId || landId <= 0) {
+                showStatus("Invalid Land ID!", true);
+                return;
+            }
+
+            await submitTransaction(
+                'finalize_land',
+                [landId],
+                document.getElementById('finalize-result'),
+                document.getElementById('finalize-button')
+            );
+        });
+
+        document.getElementById('transfer-button').addEventListener('click', async () => {
+            const landId = document.getElementById('transfer-land-id').value.trim();
+            const newOwner = document.getElementById('new-owner').value.trim();
+
+            if (!landId || landId <= 0) {
+                showStatus("Invalid Land ID!", true);
+                return;
+            }
+            if (!newOwner || !isValidAddress(newOwner)) {
+                showStatus("Invalid new owner address!", true);
+                return;
+            }
+
+            await submitTransaction(
+                'transfer_land',
+                [landId, newOwner],
+                document.getElementById('transfer-result'),
+                document.getElementById('transfer-button')
+            );
+        });
+
+        document.getElementById('assign-role-button').addEventListener('click', async () => {
+            const address = document.getElementById('role-address').value.trim();
+            const roleId = document.getElementById('role-select').value;
+
+            if (!address || !isValidAddress(address)) {
+                showStatus("Invalid address!", true);
+                return;
+            }
+
+            await submitTransaction(
+                'assign_role',
+                [address, roleId],
+                document.getElementById('role-result'),
+                document.getElementById('assign-role-button')
+            );
+        });
+
+        document.getElementById('view-button').addEventListener('click', async () => {
+            const landId = document.getElementById('view-land-id').value.trim();
+            if (!landId || landId <= 0) {
+                showStatus("Invalid Land ID!", true);
+                return;
+            }
+
+            const resultDiv = document.getElementById('view-result');
+            resultDiv.textContent = 'Fetching data...';
+
+            try {
+                const response = await aptosClient.view({
+                    function: `${FULL_MODULE_ID}::get_land_details`,
+                    type_arguments: [],
+                    arguments: [landId],
+                });
+
+                const land = response[0];
+                resultDiv.innerHTML = `
+                    <p><strong>Land ID:</strong> ${land.land_id}</p>
+                    <p><strong>Owner:</strong> ${land.owner_wallet}</p>
+                    <p><strong>Area:</strong> ${land.area_sq_meters} sqm</p>
+                    <p><strong>Status:</strong> ${STATUS_MAP[land.status] || 'Unknown'} (${land.status})</p>
+                    <p><strong>Coordinates CID:</strong> ${land.coordinates_cid}</p>
+                    <p><strong>Document CID:</strong> ${land.document_cid}</p>
+                    <p><strong>Last Verified By:</strong> ${land.last_verified_by}</p>
+                    <p><strong>Last Updated:</strong> ${new Date(land.last_updated_timestamp * 1000).toLocaleString()}</p>
+                `;
+                showStatus(`Land details fetched for ID ${landId}`);
+            } catch (error) {
+                console.error("View error:", error);
+                resultDiv.textContent = `Error: ${error.message || 'Land not found'}`;
+                showStatus("Failed to fetch land details.", true);
+            }
+        });
+
+        // Initialize on load
+        (async () => {
+            if (window.aptos && window.aptos.isConnected) {
+                try {
+                    const account = await window.aptos.account();
+                    walletAddress = account.address;
+                    userRole = await getUserRole(walletAddress);
+
+                    document.getElementById('connect-button').classList.add('hidden');
+                    document.getElementById('account-info').classList.remove('hidden');
+                    document.getElementById('wallet-address-display').textContent = `${walletAddress.substring(0, 8)}...${walletAddress.slice(-6)}`;
+                    document.getElementById('user-role-display').textContent = ROLE_MAP[userRole];
+                    document.getElementById('user-role-display').className = userRole > 0 ? 'text-green-600' : 'text-red-500';
+
+                    updateButtonStates();
+                } catch (e) {
+                    console.error("Auto-connect failed:", e);
+                }
+            }
+        })();
+    </script>
+</body>
+</html>
