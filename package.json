@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "server": "node server.js",
-    "test": "jest"
+    "test": "jest",
+    "demo": "node api-demo.js"
   },
   "dependencies": {
     "@aptos-labs/ts-sdk": "^1.29.0",
