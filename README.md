@@ -160,33 +160,6 @@ vercel deploy
 
 Set environment variables in Vercel dashboard under Settings > Environment Variables.
 
-## Development
-
-\`\`\`bash
-npm run dev
-# Open http://localhost:3000
-\`\`\`
-
-## Transaction Flow
-
-## What I added
-
-I added a set of backend helpers and React hooks to wire the frontend to the two Move modules (`landregistry` and `insurance`):
-
-- `lib/transactions.ts` — transaction payload builders for register/approve/finalize/transfer land and create/submit/payout insurance actions.
-- `lib/views.ts` — read-only view helpers to fetch lands, single land, policies and claims (expects an Aptos client with `view()` method).
-- `lib/ipfs.ts` — minimal IPFS JSON uploader with a mock fallback when no provider key is configured.
-- `lib/account-stats.ts` — computes owned lands, active policies and open claims for an account.
-- `hooks/*` — new hooks: `use-land-details.ts`, `use-policies.ts`, `use-claims.ts`, `use-account-stats.ts`. Also updated `use-all-lands.ts` to call the new views helper.
-- `__tests__/transactions.test.ts` — simple tests for transaction builders (requires jest to run).
-
-These are intentionally conservative: they use a global `aptosClient` if your wallet provider injects one, and otherwise return safe mock values. Replace the mock fallbacks with your actual Aptos client/wallet adapter integration.
-
-If you'd like, I can now:
-
-1. Wire these helpers to your wallet provider (wherever you manage wallet connection) so `globalThis.aptosClient` is set.
-2. Replace mock returns with real calls using the Aptos JS SDK and add request signing helpers.
-3. Add more tests and a small test runner configuration so you can run the unit tests locally.
 
 1. **User connects wallet** via wallet adapter
 2. **User role is fetched** from smart contract
